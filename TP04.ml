@@ -50,6 +50,10 @@ let effectifs t d = let v = make_vect d.nb 0 in
 		    done;
 		    v;;
 
-let debut_classe  e = let u = let n = vect_length e in
-			      let u = make_vect n 0. in
-			      for i=0
+
+let debut_classe e = let n = vect_length e in
+		     let u = make_vect n 0 in
+		     for i = 1 to n-1 do
+		     u.(i) <- u.(i-1) + e.(i);
+		     done;
+		     u;;

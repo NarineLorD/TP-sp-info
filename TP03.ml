@@ -31,4 +31,28 @@ let distance_memo ((u,p):mot) ((v,q):mot) = let M = make_matrix (p+1) (q+1) (-1)
 								      
 					       else M.(p).(q) in
 					    dist_aux (u,p) (v,q);;
-distance_memo ("courant",7) ("satan",5);;
+distance_memo_opt ("courant",7) ("satan",5);;
+
+
+
+
+
+
+
+
+
+
+let distance_memo_opt ((u,p):mot) ((v,q):mot) = let mi = min p q in
+						let ma = p+q-mi in
+						let M = make_vect mi 0 in
+						M.(0) <-(ma-mi);
+						(*mot -> mot -> int 
+                                              dist_aux a b renvoie la distance entre a et b*)
+						for i = 0 to ma-1 do
+						 for j = 0 to mi-1 do
+					          let c = if u.[i]=v.[j] then 0 else 1 in
+						  if j=0 then begin M.(j) <- M.(j) + c;end 
+						  else M.(j) <- min (M.(j)+c) M.(j-1);
+						 done;
+ 						done;
+						M.(mi-1);;
