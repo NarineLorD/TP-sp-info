@@ -5,8 +5,6 @@ let swap t i j = let temp = t.(i) in
 		   t.(j) <- temp;
 		 end;;
 
-let quarante_deux = 17;;
-
 let tri_insertion t = let n = vect_length t in
 		      for j=0 to n-1 do
 			let i  = ref j in
