@@ -1,0 +1,17 @@
+let A = 42;;
+let N = 888;;
+
+let tableau_test = init_vect A (fun i -> (random__int N, random__int N));;
+
+
+
+let rec find r i = if r.(i) = i then i else find r r.(i);;
+
+let calc_taille r taille i = taille.(find r i);;
+
+let union r taille i j = let a,b = find r i, find r j in
+			 if a != b then
+			   begin
+			     r.(a) <- b;
+			     taille.(b) <- calc_taille r taille a + calc_tailler taille b;
+			   end;;			 
