@@ -18,33 +18,33 @@
    colonne de la case vide.
    Les numéros de ligne et de colonne commencent à zéro.
  *)
-type taquin = { grille : int vect vect; lig:int; col:int };;
+type taquin = { grille : int array array; lig:int; col:int }
 
 (* Dans tout ce qui suit, les grilles de taquin seront toutes de
    dimension nblig * nbcol :
  *)
-let nblig = 4;;
-let nbcol = 4;;
+let nblig = 4
+let nbcol = 4
 
 (**** Fonctions auxilaires, dont vous n'aurez normalement pas besoin ****)
 (* copie_matrice : 'a vect vect -> 'a vect vect
    Réalise une copie de la matrice passée en argument.
  *)
 let copie_matrice a =
-  let n = vect_length a in
-  let b = make_vect n [| |] in
+  let n = Array.length a in
+  let b = Array.make n [| |] in
   for i = 0 to n-1 do
-    b.(i) <- copy_vect a.(i)
+    b.(i) <- Array.copy a.(i)
   done;
   b
-;;
+
 
 (* copie_taquin : taquin -> taquin
    Réalise une copie du taquin qui lui est passé en argument *)
 (* NB : remarquez l'usage d'un motif irréfutable dans la définition ci-dessous *)
 let copie_taquin { grille = g; lig = i; col = j; } =
   { grille = copie_matrice g; lig = i; col = j }
-;;
+
 (**** Fin des fonctions auxiliaires ****)
 
 
@@ -57,11 +57,11 @@ let affiche_taquin { grille = g; lig = it; col = jt } =
       if (it, jt) = (i, j) then
 	print_string "   "
       else
-	printf__printf "%02d " g.(i).(j);
+	Printf.printf "%02d " g.(i).(j);
     done;
     print_newline();
   done
-;;
+
 
 (* voisins : taquin -> taquin list
    (voisins t) calcule les taquins voisins du taquin donné en
@@ -89,13 +89,13 @@ let voisins { grille = g; lig = it; col = jt; } =
   mouvement   0 (-1);
   mouvement   0   1;
   !res
-;;
+
 
 (* taquin_solution : taquin.
    La solution du taquin.
 *)
 let taquin_solution =
-  let g = make_matrix nblig nbcol 0 in
+  let g = Array.make_matrix nblig nbcol 0 in
   for i = 0 to nblig-1 do
     for j = 0 to nbcol-1 do
       g.(i).(j) <- nbcol * i + j + 1;
@@ -103,7 +103,7 @@ let taquin_solution =
   done;
   g.(nblig-1).(nbcol-1) <- 0;
   { grille = g; lig = nblig-1; col = nbcol-1; }
-;;
+
 
 (**** Exemples de taquins à résoudre. ****)
 (* On commencera par les plus simples.
@@ -235,7 +235,7 @@ let exemple = [|
     [|[|9; 2; 8; 4|]; [|5; 1; 3; 7|]; [|6; 14; 13; 12|]; [|0; 15; 11; 10|]|];
    lig = 3; col = 0}
    |]
-;;
+
   
 (* J'ai constaté sur le taquin suivant que le nombre de mouvements
    nécessaire est au moins égal à 56. J'ai trouvé une solution en 180
@@ -246,7 +246,7 @@ let taquin_difficile = {
   grille =
     [|[|7; 12; 5; 11|]; [|8; 3; 1; 14|]; [|15; 9; 13; 2|]; [|4; 0; 6; 10|]|];
   lig = 3; col = 1 }
-;;
+
 
 (* Le nombre de mouvements du taquin suivant est égal à 80 d'après la
    thèse de Ralph Udo Gasser, Harnessing Computational Resources,
@@ -259,28 +259,28 @@ let taquin_difficile = {
 let taquin_le_plus_difficile = {
   grille = [|[|0;12;10;13|];[|15;11;14;9|];[|7;8;6;2|];[|4;3;5;1|]|];
   lig = 0; col = 0 }
-;;
+
 
 (************* Ensembles impératifs *****************)
 (* On implante un type 'a ensemble permettant de stocker, de façon
    impérative, des éléments de type 'a.
  *)
-type 'a ensemble == ('a, unit) hashtbl__t
-;;
+type 'a ensemble = ('a, unit) Hashtbl.t
+
 
 (* l'ensemble vide *)
 let (ensemble_vide : unit -> 'a ensemble) =
-  fun () -> hashtbl__new 1973;;
+  fun () -> Hashtbl.create 1973
 
 (* (ajoute e x) ajoute l'élément x à l'ensemble e. *)
 let (ajoute : 'a ensemble -> 'a -> unit) =
-  fun e x -> hashtbl__add e x ();;
+  fun e x -> Hashtbl.add e x ()
 
 (* 
    (appartient x e) retourne un booléen disant si x appartient à e
  *)
 let (appartient : 'a -> 'a ensemble -> bool) =
-  fun x e -> hashtbl__find_all e x <> [];;
+  fun x e -> Hashtbl.find_all e x <> []
 
 (************* Fin ensembles impératifs ***********)
 
@@ -306,29 +306,27 @@ let (appartient : 'a -> 'a ensemble -> bool) =
    prédéfini queue pour gérer des files.
  *)
 let rech_largeur s_initial =
-  let file_parcours = queue__new () in
+  let file_parcours = Queue.create () in
   let visites = ensemble_vide () in
   let colore x = ajoute visites x in
   let est_colore x = appartient x visites in
   let rec boucle () =
-    if queue__length file_parcours = 0 then failwith"pas de solution"
-    else let s,c = queue__take file_parcours in
-	 if s = taquin_solution then rev c
-	 else
-	   begin
-	     let traite_voisin s2 =
-	       if not est_colore s2 then
-		 begin
-		   colore s2;
-		   queue__add  (s2, s::c) file_parcours;
-		 end
-	     in
-	     do_list traite_voisin (voisins s);
-	     boucle ()
-	   end
+    if Queue.length file_parcours = 0 then failwith"pas de solution"
+    else let s,c = Queue.take file_parcours in
+	 if s = taquin_solution then List.rev c
+	 else let traite_voisin s2 =
+	        if not (est_colore s2) then
+		  begin
+		    colore s2;
+		    Queue.add  (s2, s::c) file_parcours;
+		  end
+	      in
+	      List.iter traite_voisin (voisins s);
+	      boucle ()
   in
-  queue__add (s_initial, []) file_parcours;
-  boucle ();;
+  Queue.add (s_initial, []) file_parcours;
+  boucle ()
+;;
 
 
 (* Sur mon PC, la recherche en largeur marche pour taquin13 (même si
@@ -370,20 +368,20 @@ let rech_largeur s_initial =
 
 (* À VOUS DE JOUER *)
 let rech_chemin_borne s_init b =
-  let pile_parcours = stack__new () in
+  let pile_parcours = Stack.create () in
   let rec boucle () =
-    if stack__length pile_parcours = 0 then None
-    else let s,d,c = stack__pop pile_parcours in
-	 if s = taquin_solution then Some (rev c)
+    if Stack.length pile_parcours = 0 then None
+    else let s,d,c = Stack.pop pile_parcours in
+	 if s = taquin_solution then Some (List.rev c)
 	 else if d > b then boucle ()
 	 else
 	   begin
 	     
-	     do_list (fun s2 ->stack__push  (s2,d+1, s::c) pile_parcours;) (voisins s);
+	     List.iter (fun s2 ->Stack.push  (s2,d+1, s::c) pile_parcours;) (voisins s);
 	     boucle ()
 	   end
   in
-  stack__push (s_init, 0, []) pile_parcours;
+  Stack.push (s_init, 0, []) pile_parcours;
   boucle ()
 ;;
 
@@ -408,7 +406,7 @@ let rech_chemin_borne s_init b =
 (* À VOUS DE JOUER *)
 let rec rech_par_approfondissement t =
   let rec boucle n =
-    printf__printf "Proofondeur %d " n ;
+    Printf.printf "Proofondeur %d " n ;
     print_newline ();
     match rech_chemin_borne t n with
     |Some c -> c
