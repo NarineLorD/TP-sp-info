@@ -331,8 +331,11 @@ et de les traiter dans l'ordre du parcours en largeur.
 		    Queue.add  (s2, s::c) file_parcours;
 		  end
 	      in
-	      List.iter traite_voisin (voisins s);
-	      boucle ()
+              if List.mem s c then boucle()
+              else
+	        ( List.iter traite_voisin (voisins s);
+	          boucle ()
+                )
   in
   Queue.add (taquin_solution, []) file_parcours;
   boucle ()
@@ -582,23 +585,24 @@ type resultat =
 (* À VOUS DE JOUER *)
 let rec rech_chemin_borne_heuristique h s_init b =
   let pile_parcours = Stack.create () in
-  let rec boucle() =
-    let s,d,c = Stack.pop pile_parcours in
-    if s = taquin_solution then Solution (List.rev c)
-    else let k = h s in 
-         if k + d > b then Echec(k+d)
-	 else if List.mem s c then boucle()
-	 else
-	   begin
-	     List.iter (fun s2 ->Stack.push  (s2,d+1, s::c) pile_parcours;) (voisins s);
-	     boucle()
-	   end
+  let rec boucle (Echec e) =
+    if Stack.length pile_parcours = 0 then Echec e
+    else
+      let s,d,c = Stack.pop pile_parcours in
+      if s = taquin_solution then Solution (List.rev c)
+      else let k = h s in 
+           if k + d > b then boucle(Echec(max e (k+d)))
+	   else if List.mem s c then boucle (Echec e)
+	   else
+	     begin
+	       List.iter (fun s2 ->Stack.push  (s2,d+1, s::c) pile_parcours;) (voisins s);
+	       boucle (Echec e)
+	     end
   in
   Stack.push (s_init, 0, []) pile_parcours;
-  boucle()
+  boucle(Echec 0)
         
 
-let f = rech_chemin_borne_heuristique;;
 (* Essayez cette fonction avec h1 et h2 pour résoudre des taquins
    Regardez jusqu'à quelles profondeurs vous arrivez avec l'une et
    l'autre heuristique. *)
@@ -629,7 +633,7 @@ let ida_star h t =
     Printf.printf "Proofondeur %d " n; print_newline ();
     match rech_chemin_borne_heuristique h t n with
     |Solution c -> c
-    |Echec k -> boucle (k+1)
+    |Echec k -> boucle k
   in
   boucle 0;;
 ;;
