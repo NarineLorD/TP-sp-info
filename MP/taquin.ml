@@ -60,8 +60,8 @@ let affiche_taquin { grille = g; lig = it; col = jt } =
 	Printf.printf "%02d " g.(i).(j);
     done;
     print_newline();
-  done
-
+  done;
+  print_newline()
 
 (* voisins : taquin -> taquin list
    (voisins t) calcule les taquins voisins du taquin donné en
@@ -305,15 +305,25 @@ let (appartient : 'a -> 'a ensemble -> bool) =
 (* À VOUS DE JOUER. Vous pourrez notamment utiliser le module
    prédéfini queue pour gérer des files.
  *)
+
+
 let rech_largeur s_initial =
   let file_parcours = Queue.create () in
+(*
+file_parcours contient des couples (a,b) où
+a est un sommet du graphe,
+b est une lsite de sommets du graphe représentant un chemin
+s_initial ---b--> a
+la structure de file permet de stocker les chemins construits
+et de les traiter dans l'ordre du parcours en largeur.
+ *)
   let visites = ensemble_vide () in
   let colore x = ajoute visites x in
   let est_colore x = appartient x visites in
   let rec boucle () =
     if Queue.length file_parcours = 0 then failwith"pas de solution"
     else let s,c = Queue.take file_parcours in
-	 if s = taquin_solution then List.rev c
+	 if s = s_initial then s_initial::c
 	 else let traite_voisin s2 =
 	        if not (est_colore s2) then
 		  begin
@@ -324,7 +334,7 @@ let rech_largeur s_initial =
 	      List.iter traite_voisin (voisins s);
 	      boucle ()
   in
-  Queue.add (s_initial, []) file_parcours;
+  Queue.add (taquin_solution, []) file_parcours;
   boucle ()
 ;;
 
@@ -372,19 +382,22 @@ let rech_chemin_borne s_init b =
   let rec boucle () =
     if Stack.length pile_parcours = 0 then None
     else let s,d,c = Stack.pop pile_parcours in
-	 if s = taquin_solution then Some (List.rev c)
+	 if s = s_init then Some (s_init::c)
 	 else if d > b then boucle ()
 	 else
 	   begin
 	     
 	     List.iter (fun s2 ->Stack.push  (s2,d+1, s::c) pile_parcours;) (voisins s);
-	     boucle ()
+	     boucle ()                     (*d est la longueur du chemin c*)
 	   end
   in
-  Stack.push (s_init, 0, []) pile_parcours;
+  Stack.push (taquin_solution, 0, []) pile_parcours;
   boucle ()
 ;;
 
+let item x = match x with
+  |None -> failwith "Rien ici"
+  |Some e -> e;;
 
 (* On peut vérifier que rech_chemin_borne permet par exemple de
   résoudre jusqu'à taquin12 (au prix d'un peu de patience cependant).
@@ -431,24 +444,24 @@ let rec rech_par_approfondissement t =
  *)
 (* À VOUS DE JOUER *)
 let rech_chemin_simple_borne s_init b =
-  let pile_parcours = stack__new () in
+  let pile_parcours = Stack.create () in
   let rec boucle () =
-    if stack__length pile_parcours = 0 then None
-    else let s,d,c = stack__pop pile_parcours in
-	 if s = taquin_solution then Some (rev c)
-	 else if mem s c then boucle()
+    if Stack.length pile_parcours = 0 then None
+    else let s,d,c = Stack.pop pile_parcours in
+	 if s = s_init then Some (s_init::c)
+	 else if List.mem s c then boucle()
 	 else if d > b then boucle ()
 	 else
 	   begin
-	     do_list (fun s2 ->stack__push  (s2,d+1, s::c) pile_parcours;) (voisins s);
+	     List.iter (fun s2 ->Stack.push  (s2,d+1, s::c) pile_parcours;) (voisins s);
 	     boucle ()
 	   end
   in
-  stack__push (s_init, 0, []) pile_parcours;
+  Stack.push (taquin_solution, 0, []) pile_parcours;
   boucle ()
 ;;
 
-(* Essayez votre fonction sur taquin12, taquin13 et taquin16 *)
+(* ayez votre fonction sur taquin12, taquin13 et taquin16 *)
 
 (* Comme précédemment, on peut faire une recherche par
    approfondissement.
@@ -461,7 +474,7 @@ let rech_chemin_simple_borne s_init b =
 (* À VOUS DE JOUER *)
 let rec rech_par_approfondissement2 t =
   let rec boucle n =
-    printf__printf "Proofondeur %d " n ;
+    Printf.printf "Proofondeur %d " n ;
     print_newline ();
     match rech_chemin_simple_borne t n with
     |Some c -> c
@@ -503,13 +516,13 @@ let h1 t =
     done
   done;
   !c
-;;
+
 
 let pos v =
   (* position normale du carreau de valeur v dans la grille *)
   let vm1 = v - 1 in
   vm1 / nbcol, vm1 mod nbcol
-;;
+
 
 (* h2 : taquin -> int
    Retourne la somme des distances de Manhattan des carreaux à leurs
@@ -527,7 +540,7 @@ let h2 t =
     done
   done;
   !dist
-;;
+
 
 (* On veut maintenant écrire
    rech_chemin_borne_heuristique :
@@ -567,9 +580,25 @@ type resultat =
 (* On peut maintenant écrire la fonction rech_chemin_borne_heuristique *)
   
 (* À VOUS DE JOUER *)
-let rec rech_chemin_borne_heuristique h t b n c =
-;;
+let rec rech_chemin_borne_heuristique h s_init b =
+  let pile_parcours = Stack.create () in
+  let rec boucle() =
+    let s,d,c = Stack.pop pile_parcours in
+    if s = taquin_solution then Solution (List.rev c)
+    else let k = h s in 
+         if k + d > b then Echec(k+d)
+	 else if List.mem s c then boucle()
+	 else
+	   begin
+	     List.iter (fun s2 ->Stack.push  (s2,d+1, s::c) pile_parcours;) (voisins s);
+	     boucle()
+	   end
+  in
+  Stack.push (s_init, 0, []) pile_parcours;
+  boucle()
+        
 
+let f = rech_chemin_borne_heuristique;;
 (* Essayez cette fonction avec h1 et h2 pour résoudre des taquins
    Regardez jusqu'à quelles profondeurs vous arrivez avec l'une et
    l'autre heuristique. *)
@@ -596,4 +625,11 @@ let rec rech_chemin_borne_heuristique h t b n c =
 
 (* À VOUS DE JOUER *)
 let ida_star h t =
+  let rec boucle n =
+    Printf.printf "Proofondeur %d " n; print_newline ();
+    match rech_chemin_borne_heuristique h t n with
+    |Solution c -> c
+    |Echec k -> boucle (k+1)
+  in
+  boucle 0;;
 ;;
